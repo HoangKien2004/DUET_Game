@@ -1,5 +1,7 @@
 using DG.Tweening;
+using System.Diagnostics;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -17,31 +19,53 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] float rotationSpeed;
     Rigidbody2D rb;
     Vector3 startPosition;
+    Camera cam;
+    float touchPosX;
     void Start()
     { 
         startPosition = transform.position;
         rb = GetComponent<Rigidbody2D>();
+        cam = Camera.main;
         MoveUp();
     }
     void Update()
     {
-        if (Input.GetKey(KeyCode.LeftArrow))
-            RotationLeft();
-        else if(Input.GetKey(KeyCode.RightArrow))
-            RotationRight();
+        if(!GameManager.Instance.isGameover)
+        {  
+            
+        if(Input.GetMouseButtonDown(0))
+                touchPosX = cam.ScreenToWorldPoint(Input.mousePosition).x;
+            if (Input.GetMouseButton(0))
+            {
+                float touchPosX = cam.ScreenToWorldPoint(Input.mousePosition).x;
+                if (touchPosX > 0.01f)
+                    RotateRight();
+                else
+                    RotateLeft();
+            }
+            else
+                rb.angularVelocity = 0f;
 
-        if(Input.GetKeyUp(KeyCode.LeftArrow) || Input.GetKeyUp(KeyCode.RightArrow))
-            rb.angularVelocity = 0f;
+#if UNITY_EDITOR
+            if (Input.GetKey(KeyCode.LeftArrow))
+                RotateLeft();
+            else if (Input.GetKey(KeyCode.RightArrow))
+                RotateRight();
+
+            if (Input.GetKeyUp(KeyCode.LeftArrow) || Input.GetKeyUp(KeyCode.RightArrow))
+                rb.angularVelocity = 0f;
+#endif
+        }
     }
     void MoveUp()
     {
         rb.velocity = Vector2.up * speed;
     }
-    void RotationLeft()
+    void RotateLeft()
     {
         rb.angularVelocity = rotationSpeed;
     }
-    void RotationRight()
+    void RotateRight()
     {
         rb.angularVelocity = -rotationSpeed;
     }
@@ -66,5 +90,16 @@ public class PlayerMovement : MonoBehaviour
                 GameManager.Instance.isGameover = false;
                 MoveUp();
             });
+    }
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if(other.CompareTag("LeverEnd"))
+        {
+            Destroy(other.gameObject);
+            int currentLeverIndex = SceneManager.GetActiveScene().buildIndex;
+            if(currentLeverIndex < SceneManager.sceneCount)
+                SceneManager.LoadScene(++currentLeverIndex);
+             
+        }
     }
 }
